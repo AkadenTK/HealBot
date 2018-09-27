@@ -46,6 +46,23 @@ function handle_incoming_chunk(id, data)
             local person = windower.ffxi.get_mob_by_id(parsed.ID)
             --atc('Caught char update packet for '..person.name)
         end
+    elseif id == 0x076 then
+        for  k = 0, 4 do
+            local id = data:unpack('I', k*48+5)
+            local new_buffs_list = {}
+            
+            local new_i = 0
+            if id ~= 0 then
+                for i = 1, 32 do
+                    local buff = data:byte(k*48+5+16+i-1) + 256*( math.floor( data:byte(k*48+5+8+ math.floor((i-1)/4)) / 4^((i-1)%4) )%4) -- Credit: Byrth, GearSwap
+                    if buff == 255 then
+                        break
+                    end
+                    new_buffs_list[i] = buff
+                end
+            end
+            buffs.process_buff_packet(id, new_buffs_list)
+        end
     end
 end
 

@@ -64,6 +64,12 @@ function buffs.review_active_buffs(player, buff_list)
                 end
             end
         end
+        checklist = buffs.debuffList[player.name] or {}
+        for bname,binfo in pairs(checklist) do
+            if not active:contains(bname) then
+                buffs.register_debuff(player, res.buffs[bname], false)
+            end
+        end
     end
 end
 
@@ -368,6 +374,13 @@ end
         -- end
     -- end
 -- end)
+function buffs.process_buff_packet(target_id, status)
+    if not target_id then return end
+    local target = windower.ffxi.get_mob_by_id(target_id)
+    if not target then return end
+
+    buffs.review_active_buffs(target, status)
+end
 
 
 function buffs.register_buff(target, buff, gain, action)
