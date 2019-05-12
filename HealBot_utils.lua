@@ -11,7 +11,7 @@ utils = {normalize={}}
 local lor_res = _libs.lor.resources
 local lc_res = lor_res.lc_res
 local ffxi = _libs.lor.ffxi
-
+utils.manual_actions = T{}
 
 function utils.normalize_str(str)
     return str:lower():gsub(' ', '_'):gsub('%.', '')
@@ -297,6 +297,44 @@ function processCommand(command,...)
             utils.refresh_textBoxes()
         else
             utils.toggleVisible(boxName, args[1])
+        end
+    elseif S{'manual','m'}:contains(command) then
+        -- manually do thing.
+        local action = lor_res.action_for(args[1])
+        if not action then
+            atc(123, 'Error: could not find action: '..args[1])
+            return
+        end
+        if not healer:can_use(action) or not healer:ready_to_use(action) then
+            atc(123, 'Error: Action cannot be used or isn\'t ready for use: '..action.en)
+            return
+        end
+        local t = args[2]
+        if not t then 
+            local mob = windower.ffxi.get_mob_by_target('t') 
+            t = mob and mob.id
+        end
+        if not t then
+            local mob = windower.ffxi.get_mob_by_target('me')
+            t = mob and mob.name
+        end
+        if t then
+            local exists_already = false
+            if hb.manual_action and hb.manual_action.action.id == action.id then
+                exists_already = true
+            end
+            for _,v in ipairs(utils.manual_actions) do
+                if v.action.id == action.id then
+                    exists_already = true
+                end
+            end
+            if exists_already then 
+                atc(123, 'Error: action already in manual queue: '..action.en)
+            else
+                utils.manual_actions:append({action=action,name=t,target=t})
+            end
+        else
+            atc(123,'Error: No target provided.')
         end
     elseif S{'help','--help'}:contains(command) then
         help_text()

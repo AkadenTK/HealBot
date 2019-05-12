@@ -23,6 +23,12 @@ function handle_incoming_chunk(id, data)
         local monitored_ids = hb.getMonitoredIds()
         local ai = get_action_info(id, data)
         healer:update_status(id, ai)
+        if ai.actor_id == healer.id and hb.manual_action and not healer:is_acting() then
+            if ai.param == hb.manual_action.action.id or 
+                ai.targets[1].actions[1].param == hb.manual_action.action.id then
+                hb.manual_action = nil
+            end
+        end
         if id == 0x28 then
             processAction(ai, monitored_ids)
         elseif id == 0x29 then

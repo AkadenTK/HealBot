@@ -29,6 +29,18 @@ end
 --]]
 function actions.get_defensive_action()
 	local action = {}
+
+    if hb.manual_action then
+        action.manual = hb.manual_action
+    elseif not utils.manual_actions:empty() then
+        for _,a in ipairs(utils.manual_actions) do
+            local_queue_insert(a.action.en, a.target)
+        end
+        local ma = utils.manual_actions[1]
+        hb.manual_action = ma
+        utils.manual_actions:remove(1)
+        action.manual = ma
+    end
 	
 	if (not settings.disable.cure) then
 		local cureq = CureUtils.get_cure_queue()
@@ -63,7 +75,9 @@ function actions.get_defensive_action()
 	
 	local_queue_disp()
 	
-	if (action.cure ~= nil) then
+    if action.manual ~= nil then
+        return action.manual
+	elseif (action.cure ~= nil) then
 		if (action.debuff ~= nil) and (action.debuff.action.en == 'Paralyna') and (action.debuff.name == healer.name) then
 			return action.debuff
 		elseif (action.debuff ~= nil) and ((action.debuff.prio + 2) < action.cure.prio) then
