@@ -111,6 +111,7 @@ function actions.take_action(player, partner, targ)
             buffs.debuffList[action.name][action.debuff.id].attempted = os.clock()
         end
         healer:take_action(action)
+        return true
     else                        --Otherwise, there may be an offensive action
         if (targ ~= nil) or hb.modes.independent then
             local self_engaged = (player.status == 1)
@@ -119,20 +120,25 @@ function actions.take_action(player, partner, targ)
                 if (player.target_index == partner.target_index) then
                     if offense.assist.engage and partner_engaged and (not self_engaged) then
                         healer:send_cmd('input /attack on')
+                        return true
                     else
                         healer:take_action(actions.get_offensive_action(player), '<t>')
+                        return true
                     end
                 else                            --Different targets
                     if partner_engaged and (not self_engaged) then
                         healer:send_cmd('input /as '..offense.assist.name)
+                        return true
                     end
                 end
             elseif self_engaged and hb.modes.independent then
                 healer:take_action(actions.get_offensive_action(player), '<t>')
+                return true
             end
             offense.cleanup()
         end
     end
+    return false
 end
 
 

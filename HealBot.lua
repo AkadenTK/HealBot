@@ -156,8 +156,9 @@ hb._events['render'] = windower.register_event('prerender', function()
         if hb.active and not (moving or acting) then
             --hb.active = false    --Quick stop when debugging
             if healer:action_delay_passed() then
-                healer.last_action = now                    --Refresh stored action check time
-                actions.take_action(player, partner, targ)
+                if actions.take_action(player, partner, targ) then
+                    healer.last_action = now                    --Refresh stored action check time
+                end
             end
         end
         
