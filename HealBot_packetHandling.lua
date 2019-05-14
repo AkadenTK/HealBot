@@ -24,9 +24,15 @@ function handle_incoming_chunk(id, data)
         local ai = get_action_info(id, data)
         healer:update_status(id, ai)
         if ai.actor_id == healer.id and hb.manual_action and not healer:is_acting() then
-            if ai.param == hb.manual_action.action.id or 
-                ai.targets[1].actions[1].param == hb.manual_action.action.id then
+            if ai.param == hb.manual_action.action.id or (ai.targets and ai.targets[1].actions[1].param == hb.manual_action.action.id) then
                 hb.manual_action = nil
+                atcd("cleared manual_action")
+            end
+        end
+        if ai.actor_id == healer.id and hb.aoe_action then
+            if ai.param == hb.aoe_action.action.id or (ai.targets and ai.targets[1].actions[1].param == hb.aoe_action.action.id) then
+                hb.aoe_action = nil
+                atcd("cleared aoe_action")
             end
         end
         if id == 0x28 then

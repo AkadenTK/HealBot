@@ -105,6 +105,9 @@ end
 function buffs.getDebuffQueue()
     local dbq = ActionQueue.new()
     local now = os.clock()
+    local divine_seal = _libs.lor.resources.action_for("Divine Seal")
+    local accession = _libs.lor.resources.action_for("Accession")
+    local curaga = _libs.lor.resources.action_for("Curaga")
     for targ, debuffs in pairs(buffs.debuffList) do
         for id, info in pairs(debuffs) do
             local debuff = res.buffs[id]
@@ -115,6 +118,20 @@ function buffs.getDebuffQueue()
                     if healer:can_use(spell) and ffxi.target_is_valid(spell, targ) then
                         local ign = buffs.ignored_debuffs[debuff.en]
                         if not ((ign ~= nil) and ((ign.all == true) or ((ign[targ] ~= nil) and (ign[targ] == true)))) then
+                            local num10AoE = buffs.getRemovableDebuffCountAroundTarget(targ, 10, id)
+                            local num15AoE = buffs.getRemovableDebuffCountAroundTarget(targ, 15, id)
+                            if num10AoE >= 3 and divine_sealable:contains(spell.en) and healer:can_use(divine_seal) and healer:ready_to_use(divine_seal) then
+                                spell.divine_seal = true
+                                atcd('Divine Seal active')
+                            end
+                            if num10AoE >= 3 and accessionable:contains(spell.en) and healer:can_use(accession) and healer:ready_to_use(accession) then
+                                spell.accession = true
+                                atcd('Accession active')
+                            end
+                            if num15AoE >= 2 and sleeping:contains(id) and healer:can_use(curaga) then
+                                spell = res.spells:with('en', 'Curaga')
+                            end
+
                             dbq:enqueue('debuff', spell, targ, debuff, ' ('..debuff.en..')')
                         end
                     end
@@ -482,6 +499,22 @@ function buffs.resetBuffTimers(player, exclude)
             buffs.buffList[player][buffName]['landed'] = nil
         end
     end
+end
+
+function buffs.getRemovableDebuffCountAroundTarget(target, dist, debuff)
+    local c = 0
+    local party = ffxi.party_member_names()
+    local targetMob = windower.ffxi.get_mob_by_name(target)
+    for watchPerson,_ in pairs(hb.getMonitoredPlayers()) do
+        local mob = windower.ffxi.get_mob_by_name(watchPerson)
+        local dx = targetMob.x - mob.x
+        local dy = targetMob.y - mob.y
+        if buffs.debuffList[watchPerson] and buffs.debuffList[watchPerson][debuff] and dx^2+dy^2 < dist^2 then
+            -- watched person has debuff and is within distance.
+            c = c + 1
+        end
+    end
+    return c
 end
 
 return buffs

@@ -99,6 +99,10 @@ end
 
 
 function actions.take_action(player, partner, targ)
+    if hb.aoe_action then
+        healer:take_action(hb.aoe_action)
+        return
+    end
     buffs.checkOwnBuffs()
     local_queue_reset()
     local action = actions.get_defensive_action()
@@ -110,7 +114,15 @@ function actions.take_action(player, partner, targ)
         elseif (action.type == 'debuff') then
             buffs.debuffList[action.name][action.debuff.id].attempted = os.clock()
         end
-        healer:take_action(action)
+        if action.action.divine_seal then
+            healer:take_action({action=lor_res.action_for("Divine Seal")}, healer.name)
+            hb.aoe_action = action
+        elseif action.action.accession then
+            healer:take_action({action=lor_res.action_for("Accession")}, healer.name)
+            hb.aoe_action = action
+        else
+            healer:take_action(action)
+        end
         return true
     else                        --Otherwise, there may be an offensive action
         if (targ ~= nil) or hb.modes.independent then
