@@ -310,13 +310,21 @@ function processCommand(command,...)
             return
         end
         local t = args[2]
+        if t and not ffxi.target_is_valid(action, t) then
+            atc(123, 'Error: Action ('..action.en..') cannot be used on: '..t)
+            return
+        end
         if not t then 
             local mob = windower.ffxi.get_mob_by_target('t') 
-            t = mob and mob.id
+            if ffxi.target_is_valid(action, mob) then
+                t = mob and mob.id
+            end
         end
         if not t then
             local mob = windower.ffxi.get_mob_by_target('me')
-            t = mob and mob.name
+            if ffxi.target_is_valid(action, mob) then
+                t = mob and mob.name
+            end
         end
         if t then
             local exists_already = false
