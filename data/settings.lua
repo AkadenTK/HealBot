@@ -44,4 +44,5 @@ return {
     ['deactivateIndoors'] = true,
     ['activateOutdoors'] = false,
     ['aoe_na'] = true,
+    ['repose_charm'] = true,
 }

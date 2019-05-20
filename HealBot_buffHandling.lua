@@ -105,35 +105,41 @@ end
 function buffs.getDebuffQueue()
     local dbq = ActionQueue.new()
     local now = os.clock()
-    local divine_seal = _libs.lor.resources.action_for("Divine Seal")
-    local accession = _libs.lor.resources.action_for("Accession")
-    local curaga = _libs.lor.resources.action_for("Curaga")
     for targ, debuffs in pairs(buffs.debuffList) do
         for id, info in pairs(debuffs) do
             local debuff = res.buffs[id]
             local removalSpellName = debuff_map[debuff.en]
+            -- handle charms
+            if settings.repose_charm and charmed:contains(debuff) and not buffs.has_buffs(targ, sleeping) and not buffs.has_buffs(targ, dots) then
+                removalSpellName = "Repose"
+            end
+            -- handle sleep, if the target is not charmed and if the target doesn't have dots that will wake him up (accounts for stoneskin)
+            if sleeping:contains(id) and not buffs.has_buffs(targ, charmed) and (not buffs.has_buffs(targ, dots) or buffs.has_buffs(targ, stoneskin)) then
+                local numCuragaRange = buffs.getRemovableDebuffCountAroundTarget(targ, 15, id)
+                if numCuragaRange >= 2 and sleeping:contains(id) then
+                    removalSpellName = "Curaga"
+                else
+                    removalSpellName = "Cure"
+                end
+            end
+            -- add to queue.
             if (removalSpellName ~= nil) then
                 if (info.attempted == nil) or ((now - info.attempted) >= 3) then
                     local spell = res.spells:with('en', removalSpellName)
                     if healer:can_use(spell) and ffxi.target_is_valid(spell, targ) then
+                        -- handle AoE
+                        if settings.aoe_na then
+                            local numAccessionRange = buffs.getRemovableDebuffCountAroundTarget(targ, 10, id)
+                            if numAccessionRange >= 3 and divine_sealable:contains(spell.en) then
+                                spell.divine_seal = true
+                            end
+                            if numAccessionRange >= 3 and accessionable:contains(spell.en) then
+                                spell.accession = true
+                            end
+                        end
+                        -- handle ignores
                         local ign = buffs.ignored_debuffs[debuff.en]
                         if not ((ign ~= nil) and ((ign.all == true) or ((ign[targ] ~= nil) and (ign[targ] == true)))) then
-                            if settings.aoe_na then
-                                local numAccessionRange = buffs.getRemovableDebuffCountAroundTarget(targ, 10, id)
-                                if numAccessionRange >= 3 and divine_sealable:contains(spell.en) and healer:can_use(divine_seal) and healer:ready_to_use(divine_seal) then
-                                    spell.divine_seal = true
-                                    atcd('Divine Seal active')
-                                end
-                                if numAccessionRange >= 3 and accessionable:contains(spell.en) and healer:can_use(accession) and healer:ready_to_use(accession) then
-                                    spell.accession = true
-                                    atcd('Accession active')
-                                end
-                            end
-                            local numCuragaRange = buffs.getRemovableDebuffCountAroundTarget(targ, 15, id)
-                            if numCuragaRange >= 2 and sleeping:contains(id) and healer:can_use(curaga) then
-                                spell = res.spells:with('en', 'Curaga')
-                            end
-
                             dbq:enqueue('debuff', spell, targ, debuff, ' ('..debuff.en..')')
                         end
                     end
@@ -517,6 +523,15 @@ function buffs.getRemovableDebuffCountAroundTarget(target, dist, debuff)
         end
     end
     return c
+end
+
+function buffs.has_buffs(target, buff_list)
+    for id, info in pairs(buffs.debuffList[target]) do
+        if buff_list:contains(id) then
+            return true
+        end
+    end
+    return false
 end
 
 return buffs

@@ -125,6 +125,8 @@ return {
         ['poison'] = 4,
         ['silence'] = 1,
         ['slow'] = 1,
-        ['weight'] = 4
+        ['weight'] = 5,
+        ['sleep'] = 1,
+        ['charm'] = 0,
     }
 }
