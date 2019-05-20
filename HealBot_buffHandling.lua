@@ -118,17 +118,19 @@ function buffs.getDebuffQueue()
                     if healer:can_use(spell) and ffxi.target_is_valid(spell, targ) then
                         local ign = buffs.ignored_debuffs[debuff.en]
                         if not ((ign ~= nil) and ((ign.all == true) or ((ign[targ] ~= nil) and (ign[targ] == true)))) then
-                            local num10AoE = buffs.getRemovableDebuffCountAroundTarget(targ, 10, id)
-                            local num15AoE = buffs.getRemovableDebuffCountAroundTarget(targ, 15, id)
-                            if num10AoE >= 3 and divine_sealable:contains(spell.en) and healer:can_use(divine_seal) and healer:ready_to_use(divine_seal) then
-                                spell.divine_seal = true
-                                atcd('Divine Seal active')
+                            if settings.aoe_na then
+                                local numAccessionRange = buffs.getRemovableDebuffCountAroundTarget(targ, 10, id)
+                                if numAccessionRange >= 3 and divine_sealable:contains(spell.en) and healer:can_use(divine_seal) and healer:ready_to_use(divine_seal) then
+                                    spell.divine_seal = true
+                                    atcd('Divine Seal active')
+                                end
+                                if numAccessionRange >= 3 and accessionable:contains(spell.en) and healer:can_use(accession) and healer:ready_to_use(accession) then
+                                    spell.accession = true
+                                    atcd('Accession active')
+                                end
                             end
-                            if num10AoE >= 3 and accessionable:contains(spell.en) and healer:can_use(accession) and healer:ready_to_use(accession) then
-                                spell.accession = true
-                                atcd('Accession active')
-                            end
-                            if num15AoE >= 2 and sleeping:contains(id) and healer:can_use(curaga) then
+                            local numCuragaRange = buffs.getRemovableDebuffCountAroundTarget(targ, 15, id)
+                            if numCuragaRange >= 2 and sleeping:contains(id) and healer:can_use(curaga) then
                                 spell = res.spells:with('en', 'Curaga')
                             end
 
