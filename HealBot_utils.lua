@@ -300,16 +300,25 @@ function processCommand(command,...)
         end
     elseif S{'manual','m'}:contains(command) then
         -- manually do thing.
-        local action = lor_res.action_for(args[1])
+        local t = nil
+        local targs = L{...}
+        local action_name_candidate = windower.convert_auto_trans(targs:concat(' '))
+        local action = lor_res.action_for(action_name_candidate)
         if not action then
-            atc(123, 'Error: could not find action: '..args[1])
+            t = targs:last()
+            targs:remove(targs:length())
+            action_name_candidate = windower.convert_auto_trans(targs:concat(' '))
+            action = lor_res.action_for(action_name_candidate)
+        end
+        if not action then
+            atc(123, 'Error: could not find action: "'..action_name_candidate..'"')
             return
         end
         if not healer:can_use(action) or not healer:ready_to_use(action) then
             atc(123, 'Error: Action cannot be used or isn\'t ready for use: '..action.en)
             return
         end
-        local t = args[2]
+        
         if t and not ffxi.target_is_valid(action, t) then
             atc(123, 'Error: Action ('..action.en..') cannot be used on: '..t)
             return
