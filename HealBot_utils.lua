@@ -314,11 +314,11 @@ function processCommand(command,...)
             atc(123, 'Error: could not find action: "'..action_name_candidate..'"')
             return
         end
-        if not healer:can_use(action) or not healer:ready_to_use(action) then
+        if not healer:can_use(action) or not utils.ready_to_use(action) then
             atc(123, 'Error: Action cannot be used or isn\'t ready for use: '..action.en)
             return
         end
-        
+
         if t and not ffxi.target_is_valid(action, t) then
             atc(123, 'Error: Action ('..action.en..') cannot be used on: '..t)
             return
@@ -604,6 +604,32 @@ function utils.getPlayerName(name)
         return target.name
     end
     return nil
+end
+
+function utils.ready_to_use(action)
+    if strategems:contains(action.en) then
+        local p = windower.ffxi.get_player()
+        local sch_level = 0
+        if p.main_job == "SCH" then
+            sch_level = p.main_job_level
+        elseif healer.sub_job == "SCH" then
+            sch_level = p.sub_job_level
+        end
+        if sch_level == 0 then return false end
+
+        local num_strat = 0
+        if sch_level < 30 then num_strat = 1
+        elseif sch_level < 50 then num_strat = 2
+        elseif sch_level < 70 then num_strat = 3
+        elseif sch_level < 90 then num_strat = 4
+        elseif p.job_points.sch.jp_spent < 550 then num_strat = 5
+        else num_strat = 6 end
+
+        local rc = windower.ffxi.get_ability_recasts()[action.recast_id]
+        return rc <= (4 * 60) / num_strat * (num_strat - 1)
+    else
+        return healer:ready_to_use(action)
+    end
 end
 
 --==============================================================================

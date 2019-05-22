@@ -116,7 +116,7 @@ function actions.take_action(player, partner, targ)
         end
         if action.action.divine_seal then
             local divine_seal = lor_res.action_for("Divine Seal")
-            if healer:can_use(divine_seal) and healer:ready_to_use(divine_seal) then
+            if healer:can_use(divine_seal) and utils.ready_to_use(divine_seal) then
                 healer:take_action({action=divine_seal}, healer.name)
                 hb.aoe_action = action
                 return true
@@ -124,13 +124,13 @@ function actions.take_action(player, partner, targ)
         end
         if action.action.accession then
             local accession = lor_res.action_for("Accession")
-            if healer:can_use(accession) and healer:ready_to_use(accession) then
+            if healer:can_use(accession) and utils.ready_to_use(accession) then
                 healer:take_action({action=accession}, healer.name)
                 hb.aoe_action = action
                 return true
             end
         end
-        
+
         healer:take_action(action)
         return true
     else                        --Otherwise, there may be an offensive action
