@@ -71,6 +71,15 @@ local txtbox_cmd_map = {
     showmonitored = 'montoredBox',
 }
 
+
+function utils.is_npc(mob_id)
+    local is_pc = mob_id < 0x01000000
+    local is_pet = mob_id > 0x01000000 and mob_id % 0x1000 > 0x700
+
+    -- filter out pcs and known pet IDs
+    return not is_pc and not is_pet
+end
+
 function processCommand(command,...)
     command = command and command:lower() or 'help'
     local args = map(windower.convert_auto_trans, {...})
@@ -326,7 +335,11 @@ function processCommand(command,...)
         if not t then 
             local mob = windower.ffxi.get_mob_by_target('t') 
             if ffxi.target_is_valid(action, mob) then
-                t = mob and mob.id
+                if utils.is_npc(mob.id) then
+                    t = mob and mob.id
+                else
+                    t = mob and mob.name
+                end
             end
         end
         if not t then
@@ -606,27 +619,52 @@ function utils.getPlayerName(name)
     return nil
 end
 
-function utils.ready_to_use(action)
-    if strategems:contains(action.en) then
-        local p = windower.ffxi.get_player()
-        local sch_level = 0
-        if p.main_job == "SCH" then
-            sch_level = p.main_job_level
-        elseif healer.sub_job == "SCH" then
-            sch_level = p.sub_job_level
-        end
-        if sch_level == 0 then return false end
+function num_strats()
+    local p = windower.ffxi.get_player()
+    local sch_level = 0
+    if p.main_job == "SCH" then
+        sch_level = p.main_job_level
+    elseif healer.sub_job == "SCH" then
+        sch_level = p.sub_job_level
+    end
+    if sch_level == 0 then return 0 end
 
-        local num_strat = 0
-        if sch_level < 30 then num_strat = 1
-        elseif sch_level < 50 then num_strat = 2
-        elseif sch_level < 70 then num_strat = 3
-        elseif sch_level < 90 then num_strat = 4
-        elseif p.job_points.sch.jp_spent < 550 then num_strat = 5
-        else num_strat = 6 end
+    if sch_level < 30 then return 1
+    elseif sch_level < 50 then return 2
+    elseif sch_level < 70 then return 3
+    elseif sch_level < 90 then return 4
+    elseif p.job_points.sch.jp_spent < 550 then return 5
+    else return 6 end
+end
+
+function healer_has_buffs(buffs)
+    local buff_list = windower.ffxi.get_player().buffs
+    for _,bid in pairs(buff_list) do
+        if buffs:contains(bid) then
+            return true
+        end
+    end
+    return false
+end
+
+function utils.ready_to_use(action)
+    if light_strategems:contains(action.en) then
+        if not healer_has_buffs(light_arts) then return false end
+
+        local strats = num_strats()
+        if strats < 1 then return false end 
 
         local rc = windower.ffxi.get_ability_recasts()[action.recast_id]
-        return rc <= (4 * 60) / num_strat * (num_strat - 1)
+        return rc <= (4 * 60) / strats * (strats - 1)
+    elseif dark_strategems:contains(action.en) then
+        if not healer_has_buffs(dark_arts) then return false end
+
+        local strats = num_strats()
+        if strats < 1 then return false end 
+
+        local rc = windower.ffxi.get_ability_recasts()[action.recast_id]
+        return rc <= (4 * 60) / strats * (strats - 1)
+
     else
         return healer:ready_to_use(action)
     end
